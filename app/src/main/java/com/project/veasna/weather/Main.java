@@ -1,8 +1,16 @@
 package com.project.veasna.weather;
 
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.design.widget.TabLayout;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentStatePagerAdapter;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -17,39 +25,51 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
-public class Main extends AppCompatActivity {
-    RequestQueue queue;
+public class Main extends AppCompatActivity{
+    TabLayout tabLayout;
+    ViewPager pager;
+    PagerAdapter adp;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        queue = Volley.newRequestQueue(this);
-        doStringRequest("london");
+        SharedPreferences pref=getSharedPreferences("city", Context.MODE_PRIVATE);
+        if(pref.getString("city",null)==null){
+            Intent intent=new Intent(this,CitySetter.class);
+            startActivity(intent);
+            finish();
+        }else{
 
+            pager=(ViewPager)findViewById(R.id.viewpager);
+            tabLayout=(TabLayout)findViewById(R.id.sliding_tabs);
+
+            tabLayout.setTabGravity(TabLayout.GRAVITY_FILL);
+            adp=new PagerAdapter(getSupportFragmentManager());
+            tabLayout.setupWithViewPager(pager);
+            pager.setAdapter(adp);
+            tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+                @Override
+                public void onTabSelected(TabLayout.Tab tab) {
+                    pager.setCurrentItem(tab.getPosition());
+                }
+
+                @Override
+                public void onTabUnselected(TabLayout.Tab tab) {
+
+                }
+
+                @Override
+                public void onTabReselected(TabLayout.Tab tab) {
+
+                }
+            });
+        }
 
     }
 
-    void doStringRequest(String city){
 
-        //build URL *using string builder for better performance*
-        StringRequest stringRequest = new StringRequest(Request.Method.GET, Common.getWeatherURL(city),
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        Log.e("onResponse",response);
-
-                    }
-                }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                Log.e("onErrorResponse",error.getMessage());
-            }
-        });
-
-        queue.add(stringRequest);
-    }
 
 
 
@@ -70,9 +90,56 @@ public class Main extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
-            return true;
+            Intent intent=new Intent(this,CitySetter.class);
+            startActivity(intent);
+            finish();
         }
 
         return super.onOptionsItemSelected(item);
+    }
+    class PagerAdapter extends FragmentStatePagerAdapter {
+
+        //Constructor to the class
+        public PagerAdapter(FragmentManager fm) {
+            super(fm);
+        }
+
+        //Overriding method getItem
+        @Override
+        public Fragment getItem(int position) {
+            //Returning the current tabs
+            switch (position) {
+                case 0:
+                    Weather weather = new Weather();
+                    return weather;
+
+                case 1:
+                    Forecast forecast = new Forecast();
+                    return forecast;
+                default:
+                    return null;
+            }
+        }
+
+        @Override
+        public CharSequence getPageTitle(int position) {
+            switch (position) {
+                case 0:
+
+                    return "Weather";
+
+                case 1:
+
+                    return "Forecast";
+                default:
+                    return null;
+            }
+        }
+
+        //Overriden method getCount to get the number of tabs
+        @Override
+        public int getCount() {
+            return 2;
+        }
     }
 }
